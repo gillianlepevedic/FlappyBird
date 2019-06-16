@@ -2,138 +2,131 @@ class Bird {
 	constructor(nom, chemin1, chemin2, chemin3) {
 	this.name = nom;
 	this.ailes;
-	this.picture1 = picture ("picture1", chemin1);
-	this.picture2 = picture ("picture1", chemin2);	
-	this.picture3 = picture ("picture1", chemin3);
-	this.coordonxerX= 197;
-	this.coordonxerY= 290;
+	this.picture = [picture (chemin1),picture (chemin2),picture (chemin3)];//mets les differnet type d'ailes dans une tableau
+	this.coordoneeX= 197;
+	this.coordoneeY= 290;
 	this.vitesse=0;
 	}
 }
-
 class Pipe {
 	constructor (nom, niveau){
 	this.name = nom;
-	this.pictureH = picture ("imageBas", "./Images/tubeH.png");
-	this.pictureB = picture ("imageHaut", "./Images/tubeB.png");
-	this.coordonxerX=450;
-	this.coordonxerY=100+(350*niveau);
-	this.niveau = niveau
+	this.pictureH = picture ("./Images/tubeH.png");
+	this.pictureB = picture ("./Images/tubeB.png");
+	this.coordoneeX=450;
+	this.coordoneeY=100+(350*niveau);
+	this.niveau = niveau;
 	}
 }
 
-let flappyBird = new Bird("oiseau","./Images/oiseau1.png","./Images/oiseau2.png","./Images/oiseau3.png");//creation du flappyBird
-let bond;
+const flappyBird = new Bird("oiseau","./Images/oiseau1.png","./Images/oiseau2.png","./Images/oiseau3.png");//creation du flappyBird
+let canva;
 let tuyau=[];
-let finish=[];
+let finish=false;
+let start =false;
+let id=[];				//ID0=verif ID1=defillement ID2=vol ID3=fin
 
 function draw () {
-	finish[0]=false;
-	let ctx = document.getElementById('canvas').getContext('2d');// craetion canva
-	let fond = picture ("fond","./Images/fond.png")
-	let sol = picture ("sol","./Images/sol.png");
+	canva = document.getElementById('canvas').getContext('2d');// craetion canva
+	let fond = picture ("./Images/fond.png");
+	let sol = picture ("./Images/sol.png");
+	let gameOver= picture("./Images/GameOver.png");
 	console.log (fond);
 	console.log (sol);
+	console.log (gameOver);
 	console.log (flappyBird);
-	randomPipe();
-	finish[1] = setInterval(verif,1);
-	finish[2] = setInterval(defilement,1,ctx, sol,fond);
-	saut();
+	randomPipe();											//initialise les pipes
+	id[0] = setInterval(verif,1);							//lance la verif
+	id[1] = setInterval(defilement,1, sol,fond,gameOver);	//lance les annimations
 }
 
 
-function picture (nom, chemin){							//function pour s'implifier le chargement d'une image
-	nom = new Image();
+function picture (chemin){								//function pour s'implifier le chargement d'une image
+	let nom = new Image();
 	nom.src = chemin;
-	return nom
+	return nom;
 }
 
-function defilement (canva, imgsol, imgfond) {
+function defilement (imgsol, imgfond,gameOver) {
 	animationBird ();
 	let time = new Date();
-	canva.clearRect(0,0,550,800);						//netoyage du canva
-	canva.drawImage(imgfond, 0, 0);						//image de fond
-	imgsol.X= time.getMilliseconds()/15.4;				//decalage sol
-	if (flappyBird.coordonxerY> 587){					//stop oiseau si il touche le bas
-		stop ();
-		clearInterval (finish[2]);
+	canva.clearRect(0,0,550,800);							//nettoyage du canva
+	canva.drawImage(imgfond, 0, 0);							//image de fond
+	if (finish==false) {
+		imgsol.X= time.getMilliseconds()/15.4;				//decalage du sol
 	}
-	for (let i =0; i <=tuyau.length-1; i++) {			//decalage des tuyaux
-			tuyau[i].coordonxerX = tuyau[i].coordonxerX-0.5;
-			canva.drawImage(tuyau[i].pictureH,tuyau[i].coordonxerX, tuyau[i].coordonxerY-496);
-			canva.drawImage(tuyau[i].pictureB,tuyau[i].coordonxerX, tuyau[i].coordonxerY+150);
+	if (start ==true) {
+		for (let i=0;i <=tuyau.length-1; i++) {			//decalage des tuyaux
+			if (finish == false) {
+				tuyau[i].coordoneeX = tuyau[i].coordoneeX-0.5;
+			}
+			canva.drawImage(tuyau[i].pictureH,tuyau[i].coordoneeX, tuyau[i].coordoneeY-496);
+			canva.drawImage(tuyau[i].pictureB,tuyau[i].coordoneeX, tuyau[i].coordoneeY+150);
+		}
 	}
-	canva.drawImage(flappyBird.ailes, flappyBird.coordonxerX, flappyBird.coordonxerY);// place l'oiseaux a ces coordonner
-	canva.drawImage(imgsol,-imgsol.X, 627);
-	for (let i =0; i <= tuyau.length-1; i++) {			//reinitialisation des tuyau quand on arrive au bout
-		if (tuyau[i].coordonxerX< -80) {
+	canva.drawImage(flappyBird.ailes, flappyBird.coordoneeX, flappyBird.coordoneeY);// place l'oiseaux a ses coordonner
+	canva.drawImage(imgsol,-imgsol.X, 627);					//place l'image du sol
+	for (let i =0; i <= tuyau.length-1; i++) {				//reinitialisation des tuyau quand on arrive au bout
+		if (tuyau[i].coordoneeX< -80) {
 			tuyau[i]= new Pipe ("pipe"+tuyau.length,Math.random());
 		}
 	}
+	if (flappyBird.coordoneeY> 587){						//stop oiseau si il touche le bas
+		stop ();
+		canva.drawImage(flappyBird.ailes, flappyBird.coordoneeX,587);//place FlappyBird a ca position final
+	}
+	if (finish==true){										//place le GameOver
+		canva.drawImage(gameOver, 81.5,100);
+	}
 }
 
-document.addEventListener('keydown', saut);				//lance function saut si on apuis sur une touche
 
-function saut() {
-	if (finish[0]== false){
-		clearInterval (bond);							//stop l'oiseau
+function saut() {											//initialise le vol de l'oiseaux
+	start = true;
+	if (finish == false){
+		clearInterval (id[2]);								//stop l'oiseau
 		//console.log ("touche");
 		let t0 = new Date();
-		bond =setInterval(vol,1,t0,flappyBird.coordonxerY);	//relance l'oiseau au debut d'un saut
+		id[2] =setInterval(vol,1,t0,flappyBird.coordoneeY);//relance l'oiseau au debut d'un saut
 	}
 }
 
 function vol (t0,Y){
-	let vitesseAvant = flappyBird.coordonxerY;
+	let vitesseAvant = flappyBird.coordoneeY;				//prepare pour calculer la vitesse
 	let time= new Date();
-	let deltaT = time-t0;
-	if (deltaT < 1000) {
-		flappyBird.coordonxerY = Y+75*Math.sin(deltaT/318+3.14);//parabole 
-	}else{
-		flappyBird.coordonxerY = flappyBird.coordonxerY-flappyBird.vitesse;//fin de la chute
-	}
-	flappyBird.vitesse = vitesseAvant-flappyBird.coordonxerY;//calcul vitesse oiseau
-	//console.log (flappyBird.vitesse);
+	let deltaT = (time-t0-400)/100;							//calcule le decalage pour que l'animation reste constante
+	flappyBird.coordoneeY =Y+deltaT*deltaT*4-64;			//parabole 
+	flappyBird.vitesse = vitesseAvant-flappyBird.coordoneeY;//calcul vitesse oiseau
 }
 
-function animationBird() {
+function animationBird() {									//modifie la forme des ailes
 	let time= new Date();
-	for (let i = 0; i <=3; i=i+3) {
-		if (time.getMilliseconds()<(i+1)*166.7) {
-			flappyBird.ailes = flappyBird.picture1;
-			return
-		}
-		if (time.getMilliseconds()<(i+2)*166.7) {
-			flappyBird.ailes = flappyBird.picture2;
-			return
-		}
-		if (time.getMilliseconds()<(i+3)*166.7) {
-			flappyBird.ailes = flappyBird.picture3;
-			return
+	for (var i = 0;i<=2 ; i++) {
+		if (time.getMilliseconds()*2>i*333) {
+			flappyBird.ailes = flappyBird.picture[i];		//alterne entre trois forme d'ailes en fonction du temps
 		}
 	}
 }
 
 function randomPipe() {
-	while (tuyau.length<2){								//rempli le tableau des tuyaux
+	while (tuyau.length<2){									//rempli le tableau des tuyaux
 		tuyau[tuyau.length] = new Pipe ("pipe"+tuyau.length,Math.random());
-		//tuyau[tuyau.length-2].coordonxerX= tuyau[tuyau.length-2].coordonxerX+200;
 		console.log (tuyau);
 	}
-	for (let i = 0; i<= tuyau.length-1; i++) {			//décale les tuyaux entre eut de 261px 		
-		tuyau[i].coordonxerX= tuyau[i].coordonxerX+265*i;
+	for (let i = 0; i<= tuyau.length-1; i++) {				//décale les tuyaux entre eut de 261px pour pas qu'il soit coller
+		tuyau[i].coordoneeX= tuyau[i].coordoneeX+265*i;
 	}
 }
 
-function verif (){
+function verif (){											//verifie si flappyBird ne touche pas un tuyau
 	for (let i=0 ; i<=tuyau.length-1; i++){
-		if (flappyBird.coordonxerX > tuyau[i].coordonxerX-56) {
-			if (flappyBird.coordonxerX < tuyau[i].coordonxerX+80){
-				if(flappyBird.coordonxerY>tuyau[i].coordonxerY+110){
+		if (flappyBird.coordoneeX > tuyau[i].coordoneeX-56) {
+			if (flappyBird.coordoneeX < tuyau[i].coordoneeX+80){
+				if(flappyBird.coordoneeY>tuyau[i].coordoneeY+110){
 					//console.log(1);
 					stop();
 				}
-				if(flappyBird.coordonxerY<tuyau[i].coordonxerY){
+				if(flappyBird.coordoneeY<tuyau[i].coordoneeY){
 					//console.log(2);
 					stop();
 				}	
@@ -142,15 +135,18 @@ function verif (){
 	}
 }
 
-function stop() {
-	finish[0] = true;
-	console.log("stop");
-	//clearInterval (stopD);
-	clearInterval (bond);
-	clearInterval (finish[1]);
-	setInterval(fin,10);
+function stop() {											//si flappyBird touche le fond ou un tuyau initialisation de la fin
+	if (flappyBird.coordoneeY<586) {
+		finish = true;
+		console.log("stop");
+		clearInterval (id[2]);								//stop vol
+		clearInterval (id[0]);								//stop verif
+		id[3]= setInterval (fin);
+	}
 }
 
 function fin() {
-	flappyBird.coordonxerY = flappyBird.coordonxerY+5
+	flappyBird.coordoneeY=flappyBird.coordoneeY+5;			//chute di l'oiseau jusqu'à ce qu'il disparaisse
 }
+
+document.addEventListener('keydown', saut);					//lance function saut si on apuis sur une touche
